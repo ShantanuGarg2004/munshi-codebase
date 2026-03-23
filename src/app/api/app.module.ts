@@ -4,9 +4,9 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { DbModule } from 'src/core/services/db-service/db.module';
 import { HealthCheckModule } from 'src/core/health-check/health.module';
 import { ReqResInterceptor } from 'src/core/interceptors/response-interceptor';
-import { UserModule } from 'src/modules/users/users.module';
 import { LoggerModule } from 'src/core/services/logger/logger.module';
 import { HttpExceptionFilter } from 'src/core/filters/http-exception.filter';
+import { UserModule } from 'src/services/users/users.module';
 
 @Module({
   imports: [
