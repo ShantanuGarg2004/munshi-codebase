@@ -7,6 +7,8 @@ import { ReqResInterceptor } from 'src/core/interceptors/response-interceptor';
 import { LoggerModule } from 'src/core/services/logger/logger.module';
 import { HttpExceptionFilter } from 'src/core/filters/http-exception.filter';
 import { UserModule } from 'src/services/users/users.module';
+import { FactoryModule } from 'src/services/factories/factories.module';
+import { WhatsAppModule } from 'src/modules/whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -17,7 +19,10 @@ import { UserModule } from 'src/services/users/users.module';
     LoggerModule,
     HealthCheckModule,
     // modules
+    //
+    WhatsAppModule,
     UserModule,
+    FactoryModule,
   ],
   providers: [
     {
