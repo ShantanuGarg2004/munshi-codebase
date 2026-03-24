@@ -9,6 +9,8 @@ import { HttpExceptionFilter } from 'src/core/filters/http-exception.filter';
 import { UserModule } from 'src/services/users/users.module';
 import { FactoryModule } from 'src/services/factories/factories.module';
 import { WhatsAppModule } from 'src/modules/whatsapp/whatsapp.module';
+import { IssueModule } from 'src/services/issues/issues.module';
+import { TasksModule } from 'src/services/tasks/tasks.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { WhatsAppModule } from 'src/modules/whatsapp/whatsapp.module';
     WhatsAppModule,
     UserModule,
     FactoryModule,
+    IssueModule,
+    TasksModule,
   ],
   providers: [
     {

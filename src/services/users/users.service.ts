@@ -10,45 +10,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { IsOptional, IsString } from 'class-validator';
 import { User } from './users.schema';
 import { DbService } from 'src/core/services/db-service/db.service';
-
-//
-// ✅ DTOs
-//
-
-export class CreateUserDto {
-  @IsString()
-  phone_number: string;
-
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @IsOptional()
-  @IsString()
-  profile_picture?: string;
-}
-
-export class UpdateUserDto {
-  @IsOptional()
-  @IsString()
-  phone_number?: string;
-
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @IsOptional()
-  @IsString()
-  profile_picture?: string;
-}
-
-//
-// ✅ SERVICE
-//
+import { FactoryUser } from '../factories/factories.schema';
+import { CreateUserDto } from './users.dto';
 
 @Injectable()
 export class UserService {
@@ -62,7 +27,15 @@ export class UserService {
   }
 
   async findAll(): Promise<User[]> {
-    return this.userModel.findAll();
+    return this.userModel.findAll({
+      include: [
+        {
+          model: this.dbService.sqlService.FactoryUser,
+          as: 'factory_links',
+          attributes: ['factory_id', 'role', 'doj'],
+        },
+      ],
+    });
   }
 
   async findOne(id: string): Promise<User> {
@@ -71,22 +44,18 @@ export class UserService {
     return user;
   }
 
-  async findByPhone(phone: string): Promise<User | null> {
-    return this.userModel.findOne({
+  async findByPhone(phone: string) {
+    const user = await this.userModel.findOne({
       where: { phone_number: phone },
+      include: [
+        {
+          model: this.dbService.sqlService.FactoryUser,
+          as: 'factory_links',
+          attributes: ['factory_id', 'role', 'doj'],
+        },
+      ],
     });
-  }
-
-  async update(id: string, dto: UpdateUserDto): Promise<User> {
-    const user = await this.findOne(id);
-    await user.update(dto);
-    return user;
-  }
-
-  async remove(id: string) {
-    const user = await this.findOne(id);
-    await user.destroy();
-    return { message: 'User deleted successfully' };
+    return user?.toJSON() as User & { factory_links: FactoryUser };
   }
 }
 
@@ -116,15 +85,5 @@ export class UserController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.userService.findOne(id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.userService.update(id, dto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.remove(id);
   }
 }

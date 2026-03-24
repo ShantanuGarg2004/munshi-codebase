@@ -1,18 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { WhatsAppService } from './whatsapp.service';
-
-import { IsString, IsNotEmpty, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
-
-export class WhatsAppIncomingDto {
-  @IsString()
-  @IsNotEmpty()
-  from: string;
-
-  @IsString()
-  @IsNotEmpty()
-  message: string;
-}
+import { WhatsAppIncomingDto } from './whatsapp.dto';
 
 @Controller('webhook')
 export class WhatsAppController {

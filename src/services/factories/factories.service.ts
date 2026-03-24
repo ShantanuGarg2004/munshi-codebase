@@ -8,65 +8,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { IsDateString, IsOptional, IsString, IsUUID } from 'class-validator';
-import { USER_ROLE } from '../users/users.constants';
 import { Factory, FactoryUser } from './factories.schema';
 import { DbService } from 'src/core/services/db-service/db.service';
-
-//
-// ✅ DTOs
-//
-
-// -------- Factory DTO --------
-export class CreateFactoryDto {
-  @IsString()
-  name: string;
-
-  @IsOptional()
-  @IsString()
-  address?: string;
-}
-
-export class UpdateFactoryDto {
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @IsOptional()
-  @IsString()
-  address?: string;
-}
-
-// -------- FactoryUser DTO --------
-export class CreateFactoryUserDto {
-  @IsUUID()
-  user_id: string;
-
-  @IsUUID()
-  factory_id: string;
-
-  @IsString()
-  role: USER_ROLE;
-
-  @IsOptional()
-  @IsDateString()
-  doj?: Date;
-}
-
-export class UpdateFactoryUserDto {
-  @IsOptional()
-  @IsString()
-  role?: USER_ROLE;
-
-  @IsOptional()
-  @IsDateString()
-  doj?: Date;
-}
-
-//
-// ✅ SERVICE
-//
+import { CreateFactoryDto, CreateFactoryUserDto } from './factories.dto';
 
 @Injectable()
 export class FactoryService {
@@ -76,10 +20,6 @@ export class FactoryService {
     this.factoryModel = this.dbService.sqlService.Factory;
     this.factoryUserModel = this.dbService.sqlService.FactoryUser;
   }
-
-  //
-  // 🔹 FACTORY METHODS
-  //
 
   async createFactory(dto: CreateFactoryDto): Promise<Factory> {
     return this.factoryModel.create(dto as any);
@@ -100,50 +40,29 @@ export class FactoryService {
     return factory;
   }
 
-  async updateFactory(id: string, dto: UpdateFactoryDto): Promise<Factory> {
-    const factory = await this.getFactoryById(id);
-    await factory.update(dto);
-    return factory;
-  }
-
-  //
-  // 🔹 FACTORY USER METHODS
-  //
-
   async addUserToFactory(dto: CreateFactoryUserDto): Promise<FactoryUser> {
     return this.factoryUserModel.create(dto as any);
   }
 
-  async getFactoryUsers(factoryId: string): Promise<FactoryUser[]> {
+  async getFactoryUsers(factoryId: string) {
     return this.factoryUserModel.findAll({
-      where: { factory_id: factoryId },
+      where: {
+        factory_id: factoryId,
+      },
+      include: [
+        {
+          model: this.dbService.sqlService.User,
+          as: 'user',
+          attributes: ['id', 'name', 'phone_number'],
+        },
+      ],
     });
   }
-
-  async updateFactoryUser(
-    id: string,
-    dto: UpdateFactoryUserDto,
-  ): Promise<FactoryUser> {
-    const record = await this.factoryUserModel.findByPk(id);
-
-    if (!record) throw new NotFoundException('FactoryUser not found');
-
-    await record.update(dto);
-    return record;
-  }
 }
-
-//
-// ✅ CONTROLLER
-//
 
 @Controller('factories')
 export class FactoryController {
   constructor(private readonly factoryService: FactoryService) {}
-
-  //
-  // 🔹 FACTORY ROUTES
-  //
 
   @Post()
   createFactory(@Body() dto: CreateFactoryDto) {
@@ -160,15 +79,6 @@ export class FactoryController {
     return this.factoryService.getFactoryById(id);
   }
 
-  @Patch(':id')
-  updateFactory(@Param('id') id: string, @Body() dto: UpdateFactoryDto) {
-    return this.factoryService.updateFactory(id, dto);
-  }
-
-  //
-  // 🔹 FACTORY USER ROUTES
-  //
-
   @Post('assign-user')
   addUser(@Body() dto: CreateFactoryUserDto) {
     return this.factoryService.addUserToFactory(dto);
@@ -177,13 +87,5 @@ export class FactoryController {
   @Get(':id/users')
   getFactoryUsers(@Param('id') factoryId: string) {
     return this.factoryService.getFactoryUsers(factoryId);
-  }
-
-  @Patch('user/:id')
-  updateFactoryUser(
-    @Param('id') id: string,
-    @Body() dto: UpdateFactoryUserDto,
-  ) {
-    return this.factoryService.updateFactoryUser(id, dto);
   }
 }

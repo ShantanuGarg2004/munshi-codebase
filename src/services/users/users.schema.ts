@@ -46,7 +46,7 @@ export class User extends Model<
   }
 
   static associate(models: any) {
-    User.hasMany(models.FactoryUser, {
+    User.hasOne(models.FactoryUser, {
       foreignKey: 'user_id',
       as: 'factory_links',
     });

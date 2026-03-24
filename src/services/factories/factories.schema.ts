@@ -84,6 +84,7 @@ export class FactoryUser extends Model<
         user_id: {
           type: DataTypes.UUID,
           allowNull: false,
+          unique: true,
         },
         factory_id: {
           type: DataTypes.UUID,
