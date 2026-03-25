@@ -27,8 +27,8 @@ export class TasksService {
 
   // 📋 ASSIGN TASK
   async handleAssign(
-    user_id: string,
-    factory_id: string,
+    user_id: number,
+    factory_id: number,
     assigned_to: string,
     description: string,
   ) {
@@ -47,8 +47,8 @@ export class TasksService {
   // 👤 Assign to one
   async assignToUser(
     phone: string,
-    assigned_by: string,
-    factory_id: string,
+    assigned_by: number,
+    factory_id: number,
     description: string,
   ) {
     const user = await this.usersService.findByPhone(phone);
@@ -69,8 +69,8 @@ export class TasksService {
 
   // 👥 Assign to ALL
   async assignToAll(
-    assigned_by: string,
-    factory_id: string,
+    assigned_by: number,
+    factory_id: number,
     description: string,
   ) {
     const workers = await this.factoryUserModel.findAll({
@@ -96,9 +96,9 @@ export class TasksService {
   }
 
   async addUpdate(
-    user_id: string,
-    factory_id: string,
-    task_id: string,
+    user_id: number,
+    factory_id: number,
+    task_id: number,
     message: string,
   ) {
     const cleanMessage = message.trim();
@@ -115,11 +115,11 @@ export class TasksService {
     }
 
     // 🔒 Security checks
-    if (task.factory_id !== factory_id) {
+    if (task.factory_id != factory_id) {
       throw new NotFoundException('Task does not belong to your factory');
     }
 
-    if (task.assigned_to !== user_id) {
+    if (task.assigned_to != user_id) {
       throw new NotFoundException('You are not assigned to this task');
     }
 

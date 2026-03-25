@@ -11,9 +11,9 @@ export class Attendance extends Model<
   InferAttributes<Attendance>,
   InferCreationAttributes<Attendance>
 > {
-  declare id: CreationOptional<string>;
-  declare user_id: string;
-  declare factory_id: string;
+  declare id: CreationOptional<number>;
+  declare user_id: number;
+  declare factory_id: number;
   declare date: string;
   declare is_present: boolean;
 
@@ -21,16 +21,16 @@ export class Attendance extends Model<
     Attendance.init(
       {
         id: {
-          type: DataTypes.UUID,
-          defaultValue: DataTypes.UUIDV4,
+          type: DataTypes.INTEGER,
+          autoIncrement: true,
           primaryKey: true,
         },
         user_id: {
-          type: DataTypes.UUID,
+          type: DataTypes.INTEGER,
           allowNull: false,
         },
         factory_id: {
-          type: DataTypes.UUID,
+          type: DataTypes.INTEGER,
           allowNull: false,
         },
         date: {

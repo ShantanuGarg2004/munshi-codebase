@@ -11,9 +11,9 @@ export class Issue extends Model<
   InferAttributes<Issue>,
   InferCreationAttributes<Issue>
 > {
-  declare id: CreationOptional<string>;
-  declare factory_id: string;
-  declare reported_by: string;
+  declare id: CreationOptional<number>;
+  declare factory_id: number;
+  declare reported_by: number;
   declare message: string;
   declare is_resolved: CreationOptional<boolean>;
 
@@ -21,16 +21,16 @@ export class Issue extends Model<
     Issue.init(
       {
         id: {
-          type: DataTypes.UUID,
-          defaultValue: DataTypes.UUIDV4,
+          type: DataTypes.INTEGER,
+          autoIncrement: true,
           primaryKey: true,
         },
         factory_id: {
-          type: DataTypes.UUID,
+          type: DataTypes.INTEGER,
           allowNull: false,
         },
         reported_by: {
-          type: DataTypes.UUID,
+          type: DataTypes.INTEGER,
           allowNull: false,
         },
         message: {

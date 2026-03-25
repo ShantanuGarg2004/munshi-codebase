@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsUUID, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsUUID,
+  IsDateString,
+  IsNumberString,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { USER_ROLE } from '../users/users.constants';
 
@@ -22,17 +28,15 @@ export class CreateFactoryDto {
 
 export class CreateFactoryUserDto {
   @ApiProperty({
-    example: '550e8400-e29b-41d4-a716-446655440000',
-    description: 'User ID (UUID)',
+    example: '1',
   })
-  @IsUUID()
+  @IsNumberString()
   user_id: string;
 
   @ApiProperty({
-    example: 'c42242d7-1e72-4cc3-b5e5-619b369d4370',
-    description: 'Factory ID (UUID)',
+    example: '1',
   })
-  @IsUUID()
+  @IsNumberString()
   factory_id: string;
 
   @ApiProperty({

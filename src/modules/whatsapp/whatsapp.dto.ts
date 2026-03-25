@@ -3,7 +3,7 @@ import { IsNotEmpty, IsString } from 'class-validator';
 
 export class WhatsAppIncomingDto {
   @ApiProperty({
-    example: '1234567890',
+    example: '911234567890',
   })
   @IsString()
   @IsNotEmpty()

@@ -10,10 +10,10 @@ export class Task extends Model<
   InferAttributes<Task>,
   InferCreationAttributes<Task>
 > {
-  declare id: CreationOptional<string>;
-  declare factory_id: string;
-  declare assigned_to: string;
-  declare assigned_by: string;
+  declare id: CreationOptional<number>;
+  declare factory_id: number;
+  declare assigned_to: number;
+  declare assigned_by: number;
   declare description: string;
   declare deadline?: Date;
   declare is_completed: CreationOptional<boolean>;
@@ -23,20 +23,20 @@ export class Task extends Model<
     Task.init(
       {
         id: {
-          type: DataTypes.UUID,
-          defaultValue: DataTypes.UUIDV4,
+          type: DataTypes.INTEGER,
+          autoIncrement: true,
           primaryKey: true,
         },
         factory_id: {
-          type: DataTypes.UUID,
+          type: DataTypes.INTEGER,
           allowNull: false,
         },
         assigned_to: {
-          type: DataTypes.UUID,
+          type: DataTypes.INTEGER,
           allowNull: false,
         },
         assigned_by: {
-          type: DataTypes.UUID,
+          type: DataTypes.INTEGER,
           allowNull: false,
         },
         description: {
@@ -73,25 +73,25 @@ export class TaskUpdate extends Model<
   InferAttributes<TaskUpdate>,
   InferCreationAttributes<TaskUpdate>
 > {
-  declare id: CreationOptional<string>;
-  declare task_id: string;
-  declare user_id: string;
+  declare id: CreationOptional<number>;
+  declare task_id: number;
+  declare user_id: number;
   declare message: string;
 
   static setup(sequelize: Sequelize) {
     TaskUpdate.init(
       {
         id: {
-          type: DataTypes.UUID,
-          defaultValue: DataTypes.UUIDV4,
+          type: DataTypes.INTEGER,
+          autoIncrement: true,
           primaryKey: true,
         },
         task_id: {
-          type: DataTypes.UUID,
+          type: DataTypes.INTEGER,
           allowNull: false,
         },
         user_id: {
-          type: DataTypes.UUID,
+          type: DataTypes.INTEGER,
           allowNull: false,
         },
         message: {

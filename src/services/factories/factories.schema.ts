@@ -12,7 +12,7 @@ export class Factory extends Model<
   InferAttributes<Factory>,
   InferCreationAttributes<Factory>
 > {
-  declare id: CreationOptional<string>;
+  declare id: CreationOptional<number>;
   declare name: string;
   declare address?: string;
 
@@ -20,8 +20,8 @@ export class Factory extends Model<
     Factory.init(
       {
         id: {
-          type: DataTypes.UUID,
-          defaultValue: DataTypes.UUIDV4,
+          type: DataTypes.INTEGER,
+          autoIncrement: true,
           primaryKey: true,
         },
         name: {
@@ -67,9 +67,9 @@ export class FactoryUser extends Model<
   InferAttributes<FactoryUser>,
   InferCreationAttributes<FactoryUser>
 > {
-  declare id: CreationOptional<string>;
-  declare user_id: string;
-  declare factory_id: string;
+  declare id: CreationOptional<number>;
+  declare user_id: number;
+  declare factory_id: number;
   declare role: USER_ROLE;
   declare doj?: Date;
 
@@ -77,17 +77,17 @@ export class FactoryUser extends Model<
     FactoryUser.init(
       {
         id: {
-          type: DataTypes.UUID,
-          defaultValue: DataTypes.UUIDV4,
+          type: DataTypes.INTEGER,
+          autoIncrement: true,
           primaryKey: true,
         },
         user_id: {
-          type: DataTypes.UUID,
+          type: DataTypes.INTEGER,
           allowNull: false,
           unique: true,
         },
         factory_id: {
-          type: DataTypes.UUID,
+          type: DataTypes.INTEGER,
           allowNull: false,
         },
         role: {

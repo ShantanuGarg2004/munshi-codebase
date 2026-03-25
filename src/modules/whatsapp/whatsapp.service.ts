@@ -26,6 +26,7 @@ export class WhatsAppService {
   async handleIncomingMessage(body: WhatsAppIncomingDto) {
     const rawMessage = body?.message?.trim();
     const message = rawMessage?.toLowerCase();
+    const command = message.split(' ')[0];
     const phone = body?.from;
 
     const user = await this.usersService.findByPhone(phone);
@@ -37,25 +38,21 @@ export class WhatsAppService {
     const factoryId = user.factory_links?.factory_id;
     const role = user.factory_links?.role;
 
-    if (!factoryId) {
+    if (!factoryId)
       throw new NotFoundException('User not assigned to any factory');
-    }
 
     // 🟢 Attendance
     //
-    if (message === COMMANDS.HELP) {
-      return COMMAND_HINTS;
-    }
-    if (message === COMMANDS.PRESENT || message === COMMANDS.ABSENT) {
+    if (command === COMMANDS.HELP) return COMMAND_HINTS;
+    if (command === COMMANDS.PRESENT || command === COMMANDS.ABSENT)
       return this.attendanceService.markAttendance(
         user.id,
         factoryId,
-        message === COMMANDS.PRESENT,
+        command === COMMANDS.PRESENT,
       );
-    }
 
     // 👷 Get Workers (Manager/Owner only)
-    if (message === COMMANDS.MEMEBERS) {
+    if (command === COMMANDS.MEMEBERS) {
       this.ensureManager(role);
 
       const workers = await this.factoryService.getFactoryUsers(factoryId);
@@ -68,12 +65,10 @@ export class WhatsAppService {
     }
 
     // 📋 Tasks
-    if (message === COMMANDS.TASKS) {
-      return this.tasksService.getTasks(user);
-    }
+    if (command === COMMANDS.TASKS) return this.tasksService.getTasks(user);
 
     // 📋 Assign
-    if (message.startsWith(COMMANDS.ASSIGN)) {
+    if (command == COMMANDS.ASSIGN) {
       this.ensureManager(role);
 
       const { assigned_to, description } = this.parseAssignCommand(rawMessage);
@@ -87,7 +82,7 @@ export class WhatsAppService {
     }
 
     // 🔄 Update
-    if (message.startsWith(COMMANDS.UPDATE)) {
+    if (command == COMMANDS.UPDATE) {
       this.ensureWorker(role);
 
       const { task_id, updateMessage } = this.parseUpdateCommand(rawMessage);
@@ -101,19 +96,18 @@ export class WhatsAppService {
     }
 
     // 🚨 Issues list
-    if (message === COMMANDS.ISSUES) {
+    if (command === COMMANDS.ISSUES)
       return this.issuesService.getActiveIssues(factoryId);
-    }
 
     // 🚨 Create issue
-    if (message.startsWith(COMMANDS.ISSUE)) {
+    if (command == COMMANDS.ISSUE) {
       const issueMessage = rawMessage.replace(COMMANDS.ISSUE, '').trim();
 
       return this.issuesService.createIssue(user.id, factoryId, issueMessage);
     }
 
     // 🚨 Resolve issue
-    if (message.startsWith(COMMANDS.RESOLVE)) {
+    if (command == COMMANDS.RESOLVE) {
       this.ensureManager(role);
 
       const issueId = rawMessage.split(' ')[1];
@@ -125,7 +119,7 @@ export class WhatsAppService {
       return this.issuesService.resolveIssue(issueId);
     }
 
-    return { message: 'Unknown command' };
+    return { message: 'Unknown command: use /help to check list of commands' };
   }
 
   // 🔒 Role Guards
@@ -162,7 +156,7 @@ export class WhatsAppService {
   private parseUpdateCommand(message: string) {
     const parts = message.split(' ');
 
-    const task_id = parts[1];
+    const task_id = Number.parseInt(parts[1]);
     const updateMessage = parts.slice(2).join(' ').trim();
 
     if (!task_id || !updateMessage) {

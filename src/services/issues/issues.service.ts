@@ -14,10 +14,10 @@ export class IssueService {
     this.IssueModel = this.dbService.sqlService.Issue;
   }
 
-  async createIssue(userId: string, factoryId: string, message: string) {
+  async createIssue(userId: number, factory_id: number, message: string) {
     return await this.IssueModel.create({
       reported_by: userId,
-      factory_id: factoryId,
+      factory_id,
       message,
     });
   }
@@ -36,10 +36,10 @@ export class IssueService {
     return { message: 'Issue resolved' };
   }
 
-  async getActiveIssues(factoryId: string) {
+  async getActiveIssues(factory_id: number) {
     return this.IssueModel.findAll({
       where: {
-        factory_id: factoryId,
+        factory_id,
         is_resolved: false,
       },
     });

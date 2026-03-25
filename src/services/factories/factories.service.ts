@@ -44,10 +44,10 @@ export class FactoryService {
     return this.factoryUserModel.create(dto as any);
   }
 
-  async getFactoryUsers(factoryId: string) {
+  async getFactoryUsers(factory_id: number) {
     return this.factoryUserModel.findAll({
       where: {
-        factory_id: factoryId,
+        factory_id,
       },
       include: [
         {
@@ -86,6 +86,6 @@ export class FactoryController {
 
   @Get(':id/users')
   getFactoryUsers(@Param('id') factoryId: string) {
-    return this.factoryService.getFactoryUsers(factoryId);
+    return this.factoryService.getFactoryUsers(Number.parseInt(factoryId));
   }
 }
