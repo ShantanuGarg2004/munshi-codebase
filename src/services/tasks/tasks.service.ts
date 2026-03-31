@@ -137,14 +137,6 @@ export class TasksService {
     // ✅ Auto-complete logic
     const lower = cleanMessage.toLowerCase();
 
-    if (
-      lower.includes('done') ||
-      lower.includes('completed') ||
-      lower.includes('finished')
-    ) {
-      await task.update({ is_completed: true });
-    }
-
     return {
       message: 'Update added successfully',
       task_id,
@@ -170,30 +162,28 @@ export class TasksService {
       if (!tasks.length) {
         return { message: 'No pending tasks 🎉' };
       }
-
-      return {
-        message: this.formatTasks(tasks, '📋 Your Pending Tasks'),
-      };
-    }
-
-    // 👨‍💼 MANAGER → completed tasks
-    if (role === 'MANAGER') {
+      return tasks;
+      // return {
+      //   message: this.formatTasks(tasks, '📋 Your Pending Tasks'),
+      // };
+    } else {
       const tasks = await this.taskModel.findAll({
         where: {
           factory_id: factoryId,
-          is_completed: true,
+          is_completed: false,
         },
         order: [['updated_at', 'DESC']],
         limit: 20, // optional limit
       });
 
       if (!tasks.length) {
-        return { message: 'No completed tasks yet' };
+        return { message: 'No pending tasks yet' };
       }
-
-      return {
-        message: this.formatTasks(tasks, '✅ Completed Tasks'),
-      };
+      return tasks;
+      // return {
+      //   tasks,
+      //   message: this.formatTasks(tasks, '✅ Completed Tasks'),
+      // };
     }
 
     return { message: 'Invalid role' };
@@ -208,5 +198,37 @@ export class TasksService {
     });
 
     return text;
+  }
+
+  async completeTask(user_id: number, factory_id: number, task_id: number) {
+    if (!task_id) {
+      throw new NotFoundException('Task ID required');
+    }
+
+    const task = await this.taskModel.findByPk(task_id);
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    // 🔒 Security checks
+    if (task.factory_id !== factory_id) {
+      throw new NotFoundException('Task does not belong to your factory');
+    }
+
+    if (task.assigned_to !== user_id) {
+      throw new NotFoundException('You are not assigned to this task');
+    }
+
+    if (task.is_completed) {
+      return { message: 'Task already completed ✅' };
+    }
+
+    // ✅ Mark complete
+    await task.update({ is_completed: true });
+
+    return {
+      message: `Task #${task_id} marked as completed ✅`,
+    };
   }
 }

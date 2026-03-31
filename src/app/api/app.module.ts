@@ -30,10 +30,6 @@ import { TasksModule } from 'src/services/tasks/tasks.module';
   ],
   providers: [
     {
-      provide: APP_INTERCEPTOR,
-      useClass: ReqResInterceptor,
-    },
-    {
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,
     },

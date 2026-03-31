@@ -12,9 +12,12 @@ import { USER_ROLE } from 'src/services/users/users.constants';
 import { TasksService } from 'src/services/tasks/tasks.service';
 import { COMMAND_HINTS, COMMANDS } from './whatsapp.constants';
 import { FactoryService } from 'src/services/factories/factories.service';
+import axios from 'axios';
 
 @Injectable()
 export class WhatsAppService {
+  private readonly token = process.env.WHATSAPP_TOKEN;
+  private readonly phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   constructor(
     private readonly tasksService: TasksService,
     private readonly attendanceService: AttendanceService,
@@ -23,7 +26,69 @@ export class WhatsAppService {
     private readonly factoryService: FactoryService,
   ) {}
 
+  async sendTextMessage(to: string, message: string) {
+    const url = `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`;
+
+    return axios.post(
+      url,
+      {
+        messaging_product: 'whatsapp',
+        to,
+        type: 'text',
+        text: { body: message },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  }
+
+  async sendTemplate(to: string, templateName: string) {
+    const url = `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`;
+
+    return axios.post(
+      url,
+      {
+        messaging_product: 'whatsapp',
+        to,
+        type: 'template',
+        template: {
+          name: templateName,
+          language: { code: 'en_US' },
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  }
+
   async handleIncomingMessage(body: WhatsAppIncomingDto) {
+    try {
+      const result: any = await this.processCommand(body);
+      const message =
+        typeof result === 'string' ? result : result?.message || result;
+
+      await this.sendTextMessage(body.from, `${JSON.stringify(message)}`);
+
+      return 'ok';
+    } catch (error) {
+      await this.sendTextMessage(
+        body.from,
+        error.message || 'Something went wrong',
+      );
+
+      return 'error';
+    }
+  }
+
+  async processCommand(body: WhatsAppIncomingDto) {
     const rawMessage = body?.message?.trim();
     const message = rawMessage?.toLowerCase();
     const command = message.split(' ')[0];
@@ -117,6 +182,21 @@ export class WhatsAppService {
       }
 
       return this.issuesService.resolveIssue(issueId);
+    }
+
+    if (command == COMMANDS.COMPLETE) {
+      if (role !== USER_ROLE.WORKER) {
+        throw new ForbiddenException('Only workers can complete tasks');
+      }
+
+      const parts = message.split(' ');
+      const task_id = Number(parts[1]);
+
+      if (!task_id || isNaN(task_id)) {
+        throw new NotFoundException('Format: /complete <taskId>');
+      }
+
+      return this.tasksService.completeTask(user.id, factoryId, task_id);
     }
 
     return { message: 'Unknown command: use /help to check list of commands' };
