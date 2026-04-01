@@ -27,9 +27,9 @@ export class WhatsAppService {
   ) {}
 
   async sendTextMessage(to: string, message: string) {
-    const url = `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`;
+    const url = await `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`;
 
-    return axios.post(
+    const res =  axios.post(
       url,
       {
         messaging_product: 'whatsapp',
@@ -44,6 +44,10 @@ export class WhatsAppService {
         },
       },
     );
+
+    console.log(res);
+
+    return res;
   }
 
   async sendTemplate(to: string, templateName: string) {
@@ -75,7 +79,9 @@ export class WhatsAppService {
       const message =
         typeof result === 'string' ? result : result?.message || result;
 
-      await this.sendTextMessage(body.from, `${JSON.stringify(message)}`);
+      // await this.sendTextMessage(body.from, `${JSON.stringify(message)}`);
+
+      await this.sendTemplate(body.from, 'hello_world');
 
       return 'ok';
     } catch (error) {
@@ -83,6 +89,8 @@ export class WhatsAppService {
         body.from,
         error.message || 'Something went wrong',
       );
+
+      console.log(error);
 
       return 'error';
     }
