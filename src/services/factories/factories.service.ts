@@ -56,6 +56,8 @@ export class FactoryService {
           attributes: ['id', 'name', 'phone_number'],
         },
       ],
+      raw: true,
+      nest: true,
     });
   }
 }

@@ -27,9 +27,10 @@ export class WhatsAppService {
   ) {}
 
   async sendTextMessage(to: string, message: string) {
-    const url = await `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`;
+    const url =
+      await `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`;
 
-    const res =  axios.post(
+    const res = axios.post(
       url,
       {
         messaging_product: 'whatsapp',
@@ -50,8 +51,61 @@ export class WhatsAppService {
     return res;
   }
 
-  async sendTemplate(to: string, templateName: string) {
+  // export function formatCommandHints(commands: typeof COMMAND_HINTS) {
+  //   return commands
+  //     .map((c) => `${c.command} - ${c.hint}`)
+  //     .join('\n');
+  // }
+
+  async sendTemplate(
+    to: string,
+    templateName: string,
+    options?: {
+      languageCode?: string;
+      body?: (string | number)[];
+      header?: (string | number)[];
+      buttons?: { index: number; payload: string }[];
+    },
+  ) {
     const url = `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`;
+
+    const components: any[] = [];
+
+    if (options?.body?.length) {
+      components.push({
+        type: 'body',
+        parameters: options.body.map((val) => ({
+          type: 'text',
+          text: String(val),
+        })),
+      });
+    }
+
+    if (options?.header?.length) {
+      components.push({
+        type: 'header',
+        parameters: options.header.map((val) => ({
+          type: 'text',
+          text: String(val),
+        })),
+      });
+    }
+
+    if (options?.buttons?.length) {
+      options.buttons.forEach((btn) => {
+        components.push({
+          type: 'button',
+          sub_type: 'quick_reply',
+          index: String(btn.index),
+          parameters: [
+            {
+              type: 'payload',
+              payload: btn.payload,
+            },
+          ],
+        });
+      });
+    }
 
     return axios.post(
       url,
@@ -61,7 +115,8 @@ export class WhatsAppService {
         type: 'template',
         template: {
           name: templateName,
-          language: { code: 'en_US' },
+          language: { code: options?.languageCode || 'en_US' },
+          ...(components.length && { components }),
         },
       },
       {
@@ -78,11 +133,7 @@ export class WhatsAppService {
       const result: any = await this.processCommand(body);
       const message =
         typeof result === 'string' ? result : result?.message || result;
-
-      // await this.sendTextMessage(body.from, `${JSON.stringify(message)}`);
-
-      await this.sendTemplate(body.from, 'hello_world');
-
+      await this.sendTextMessage(body.from, result);
       return 'ok';
     } catch (error) {
       await this.sendTextMessage(
@@ -116,7 +167,46 @@ export class WhatsAppService {
 
     // 🟢 Attendance
     //
-    if (command === COMMANDS.HELP) return COMMAND_HINTS;
+    //
+
+    const formattedText = `👋 Hello ${user?.name || 'User'},
+
+    Welcome to *Munshi Assistant* 🤖
+
+    Here’s what you can do:
+
+    ━━━━━━━━━━━━━━━
+    🟢 *Attendance*
+    • /present → Mark yourself present
+    • /absent → Mark yourself absent
+
+    ━━━━━━━━━━━━━━━
+    📋 *Tasks*
+    • /tasks → View your tasks
+    • /complete [taskId] → Complete a task
+    • /assign @user/@all [task] → Assign task
+    • /update [taskId] [message] → Update task
+
+    ━━━━━━━━━━━━━━━
+    🚨 *Issues*
+    • /issue [message] → Report an issue
+    • /issues → View active issues
+    • /resolve [issueId] → Resolve issue
+
+    ━━━━━━━━━━━━━━━
+    👥 *Team*
+    • /members → View team members
+
+    ━━━━━━━━━━━━━━━
+    ❓ *Help*
+    • /help → Show this menu again
+
+    ━━━━━━━━━━━━━━━
+
+    ✨ Tip: Just type any command to get started!`;
+
+    if (command === COMMANDS.HELP) return formattedText;
+
     if (command === COMMANDS.PRESENT || command === COMMANDS.ABSENT)
       return this.attendanceService.markAttendance(
         user.id,
@@ -124,87 +214,268 @@ export class WhatsAppService {
         command === COMMANDS.PRESENT,
       );
 
-    // 👷 Get Workers (Manager/Owner only)
     if (command === COMMANDS.MEMEBERS) {
       this.ensureManager(role);
 
       const workers = await this.factoryService.getFactoryUsers(factoryId);
 
+      console.log({ workers });
+
       if (!workers.length) {
-        return { message: 'No workers found in factory' };
+        return `👥 *Team Members*
+
+    No members found in your factory.
+
+    ━━━━━━━━━━━━━━━
+
+    ⚠️ Add members to start managing tasks`;
       }
 
-      return workers;
+      const membersList = workers
+        .map((u: any, i) => `${i + 1}. ${u.user.name} (${u.role})`)
+        .join('\n');
+
+      return `👥 *Your Team Overview*
+
+    Here are the active members:
+
+    ${membersList}
+
+    ━━━━━━━━━━━━━━━
+
+    👑 You are managing this team
+    📋 Use /assign to assign tasks`;
     }
 
-    // 📋 Tasks
-    if (command === COMMANDS.TASKS) return this.tasksService.getTasks(user);
+    // =========================
+    // 📋 TASKS COMMANDS
+    // =========================
 
-    // 📋 Assign
-    if (command == COMMANDS.ASSIGN) {
+    // 📋 VIEW TASKS
+    if (command === COMMANDS.TASKS) {
+      const tasks = await this.tasksService.getTasks(user);
+
+      if (!Array.isArray(tasks) || !tasks.length) {
+        return `📋 *Tasks*
+
+    No pending tasks 🎉
+
+    ━━━━━━━━━━━━━━━
+
+    ✨ You're all caught up!`;
+      }
+
+      let text = `📋 *Your Tasks*\n\n`;
+
+      tasks.slice(0, 10).forEach((task: any, index: number) => {
+        const isOverdue = task.deadline && new Date(task.deadline) < new Date();
+
+        const deadline = task.deadline
+          ? `${new Date(task.deadline).toLocaleDateString()} ${
+              isOverdue ? '⚠️ Overdue' : ''
+            }`
+          : 'No deadline';
+
+        text += `${index + 1}. ${task.description}\n`;
+        text += `🆔 ID: ${task.id}\n`;
+        text += `⏳ ${deadline}\n`;
+        text += `📌 ${task.is_completed ? '✅ Done' : '⏳ Pending'}\n\n`;
+      });
+
+      text += `━━━━━━━━━━━━━━━\n\n💡 Use /complete [taskId]`;
+
+      return text;
+    }
+
+    // ✅ COMPLETE TASK
+    if (command === COMMANDS.COMPLETE) {
+      const parts = rawMessage.split(' ');
+      const task_id = Number(parts[1]);
+
+      if (!task_id || isNaN(task_id)) {
+        return `⚠️ Invalid Format
+
+    Use:
+     /complete [taskId]
+
+    Example:
+     /complete 12`;
+      }
+
+      const result = await this.tasksService.completeTask(
+        user.id,
+        factoryId,
+        task_id,
+      );
+
+      return result?.message
+        ? `✅ *Task Completed*
+
+    🆔 Task ID: ${task_id}
+
+    ━━━━━━━━━━━━━━━
+
+    ${result.message}`
+        : result;
+    }
+
+    // 🧑‍🤝‍🧑 ASSIGN TASK
+    if (command === COMMANDS.ASSIGN) {
       this.ensureManager(role);
 
-      const { assigned_to, description } = this.parseAssignCommand(rawMessage);
+      const parts = rawMessage.split(' ');
+      const assigned_to = parts[1];
+      const description = parts.slice(2).join(' ').trim();
 
-      return this.tasksService.handleAssign(
+      if (!assigned_to || !description) {
+        return `⚠️ Invalid Format
+
+    Use:
+     /assign @user or @all [task]
+
+    Example:
+     /assign @ajay Fix login bug`;
+      }
+
+      const result = await this.tasksService.handleAssign(
         user.id,
         factoryId,
         assigned_to,
         description,
       );
+
+      return typeof result === 'string'
+        ? `🧑‍🤝‍🧑 *Task Assigned*
+
+    📝 ${description}
+
+    ━━━━━━━━━━━━━━━
+
+    ${result}`
+        : result;
     }
 
-    // 🔄 Update
-    if (command == COMMANDS.UPDATE) {
+    if (command === COMMANDS.UPDATE) {
       this.ensureWorker(role);
 
-      const { task_id, updateMessage } = this.parseUpdateCommand(rawMessage);
+      const parts = rawMessage.split(' ');
+      const task_id = Number(parts[1]);
+      const updateMessage = parts.slice(2).join(' ').trim();
 
-      return this.tasksService.addUpdate(
+      if (!task_id || !updateMessage) {
+        return `⚠️ Invalid Format
+
+    Use:
+     /update [taskId] [message]
+
+    Example:
+     /update 12 Work completed`;
+      }
+
+      const result = await this.tasksService.addUpdate(
         user.id,
         factoryId,
         task_id,
         updateMessage,
       );
+
+      return result?.message
+        ? `🔄 *Task Updated*
+
+    🆔 Task ID: ${task_id}
+    📝 ${updateMessage}
+
+    ━━━━━━━━━━━━━━━
+
+    ${result.message}`
+        : result;
     }
 
-    // 🚨 Issues list
-    if (command === COMMANDS.ISSUES)
-      return this.issuesService.getActiveIssues(factoryId);
+    // =========================
+    // 🚨 ISSUES COMMANDS
+    // =========================
 
-    // 🚨 Create issue
-    if (command == COMMANDS.ISSUE) {
+    // 📋 VIEW ACTIVE ISSUES
+    if (command === COMMANDS.ISSUES) {
+      const issues = await this.issuesService.getActiveIssues(factoryId);
+
+      if (!issues || !issues.length) {
+        return `🚨 *Active Issues*
+
+    No active issues found ✅
+
+    ━━━━━━━━━━━━━━━
+
+    ✨ Everything is running smoothly`;
+      }
+
+      let text = `🚨 *Active Issues*\n\n`;
+
+      issues.slice(0, 10).forEach((issue: any, index: number) => {
+        const date = new Date(issue.created_at).toLocaleDateString();
+
+        text += `${index + 1}. ${issue.message}\n`;
+        text += `🆔 ID: ${issue.id}\n`;
+        text += `📅 ${date}\n\n`;
+      });
+
+      text += `━━━━━━━━━━━━━━━\n\n💡 Use /resolve [issueId] to fix an issue`;
+
+      return text;
+    }
+
+    // 🚨 CREATE ISSUE
+    if (command === COMMANDS.ISSUE) {
       const issueMessage = rawMessage.replace(COMMANDS.ISSUE, '').trim();
 
-      return this.issuesService.createIssue(user.id, factoryId, issueMessage);
+      if (!issueMessage) {
+        return `⚠️ Invalid Format
+
+    Use:
+     /issue [message]
+
+    Example:
+     /issue Machine not working`;
+      }
+
+      await this.issuesService.createIssue(user.id, factoryId, issueMessage);
+
+      return `🚨 *Issue Reported*
+
+    📝 ${issueMessage}
+
+    ━━━━━━━━━━━━━━━
+
+    ✅ Issue submitted successfully`;
     }
 
-    // 🚨 Resolve issue
-    if (command == COMMANDS.RESOLVE) {
+    // ✅ RESOLVE ISSUE
+    if (command === COMMANDS.RESOLVE) {
       this.ensureManager(role);
 
       const issueId = rawMessage.split(' ')[1];
 
       if (!issueId) {
-        throw new NotFoundException('Issue ID required');
+        return `⚠️ Invalid Format
+
+    Use:
+     /resolve [issueId]
+
+    Example:
+     /resolve 5`;
       }
 
-      return this.issuesService.resolveIssue(issueId);
-    }
+      const result = await this.issuesService.resolveIssue(issueId);
 
-    if (command == COMMANDS.COMPLETE) {
-      if (role !== USER_ROLE.WORKER) {
-        throw new ForbiddenException('Only workers can complete tasks');
-      }
+      return result?.message
+        ? `✅ *Issue Resolved*
 
-      const parts = message.split(' ');
-      const task_id = Number(parts[1]);
+    🆔 Issue ID: ${issueId}
 
-      if (!task_id || isNaN(task_id)) {
-        throw new NotFoundException('Format: /complete <taskId>');
-      }
+    ━━━━━━━━━━━━━━━
 
-      return this.tasksService.completeTask(user.id, factoryId, task_id);
+    ${result.message}`
+        : result;
     }
 
     return { message: 'Unknown command: use /help to check list of commands' };
