@@ -30,7 +30,7 @@ export class WhatsAppService {
     const url =
       await `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`;
 
-    const res = axios.post(
+    const res = await axios.post(
       url,
       {
         messaging_product: 'whatsapp',
@@ -136,12 +136,11 @@ export class WhatsAppService {
       await this.sendTextMessage(body.from, result);
       return 'ok';
     } catch (error) {
+      console.log(error);
       await this.sendTextMessage(
         body.from,
         error.message || 'Something went wrong',
       );
-
-      console.log(error);
 
       return 'error';
     }
@@ -478,7 +477,7 @@ export class WhatsAppService {
         : result;
     }
 
-    return { message: 'Unknown command: use /help to check list of commands' };
+    return 'Unknown command: use /help to check list of commands';
   }
 
   // 🔒 Role Guards

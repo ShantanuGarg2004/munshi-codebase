@@ -35,7 +35,7 @@ export class AttendanceService {
     user_id: number,
     factory_id: number,
     is_present: boolean,
-  ): Promise<{ message: string; data?: Attendance }> {
+  ) {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
     // 🔍 Check existing attendance
@@ -51,10 +51,7 @@ export class AttendanceService {
     if (existing) {
       await existing.update({ is_present });
 
-      return {
-        message: `Attendance updated to ${is_present ? 'PRESENT' : 'ABSENT'}`,
-        data: existing,
-      };
+      return `Attendance updated to ${is_present ? 'PRESENT' : 'ABSENT'}`;
     }
 
     // 🆕 CREATE new attendance
@@ -66,10 +63,7 @@ export class AttendanceService {
         is_present,
       } as any);
 
-      return {
-        message: `Attendance marked as ${is_present ? 'PRESENT' : 'ABSENT'}`,
-        data: record,
-      };
+      return `Attendance marked as ${is_present ? 'PRESENT' : 'ABSENT'}`;
     } catch (error) {
       if (error.name === 'SequelizeUniqueConstraintError') {
         throw new BadRequestException('Attendance already marked for today');
