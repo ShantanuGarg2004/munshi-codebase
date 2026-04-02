@@ -13,6 +13,7 @@ import { TasksService } from 'src/services/tasks/tasks.service';
 import { COMMAND_HINTS, COMMANDS } from './whatsapp.constants';
 import { FactoryService } from 'src/services/factories/factories.service';
 import axios from 'axios';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class WhatsAppService {
@@ -115,7 +116,7 @@ export class WhatsAppService {
         type: 'template',
         template: {
           name: templateName,
-          language: { code: options?.languageCode || 'en_US' },
+          language: { code: options?.languageCode || 'en' },
           ...(components.length && { components }),
         },
       },
@@ -522,5 +523,70 @@ export class WhatsAppService {
     }
 
     return { task_id, updateMessage };
+  }
+}
+
+@Injectable()
+export class AttendanceCronService {
+  constructor(
+    private readonly factoryService: FactoryService,
+    private readonly attendanceService: AttendanceService,
+    private readonly whatsappService: WhatsAppService,
+  ) {}
+
+  // 🟢 9 AM initial reminder
+  @Cron('0 9 * * *')
+  async sendMorningReminder() {
+    await this.sendReminder('Morning');
+  }
+
+  // 🔁 Every 2 hours retry
+  @Cron(CronExpression.EVERY_2_HOURS)
+  async sendRetryReminder() {
+    const hour = new Date().getHours();
+
+    // ❌ Skip before 9 AM
+    if (hour < 11) return;
+
+    // ❌ Stop after 7 PM (optional)
+    if (hour > 19) return;
+
+    await this.sendReminder('Retry');
+  }
+
+  // 🔥 Core Logic
+  async sendReminder(type: 'Morning' | 'Retry') {
+    const workers: any = await this.factoryService.getAllWorkers(); // implement this
+
+    const today = new Date().toISOString().split('T')[0];
+
+    for (const worker of workers) {
+      const w = worker.toJSON();
+      const userId = w.user_id;
+      const factoryId = w.factory_id;
+      const phone = w.user.phone_number;
+
+      // ✅ Check attendance
+      const alreadyMarked = await this.attendanceService.isMarkedToday(
+        userId,
+        factoryId,
+      );
+
+      if (alreadyMarked) continue;
+
+      // 🚀 Send template
+      await this.whatsappService.sendTemplate(
+        phone,
+        'factory_attendance_reminder',
+        { body: [w.user.name || 'Worker'] },
+      );
+
+      // ⏳ small delay (avoid rate limit)
+      await this.delay(300);
+    }
+  }
+
+  private async delay(ms: number) {
+    return new Promise((res) => setTimeout(res, ms));
   }
 }

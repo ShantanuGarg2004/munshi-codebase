@@ -31,6 +31,20 @@ export class AttendanceService {
   //
   // 🔹 WHATSAPP ENTRY POINT METHOD
   //
+  //
+  async isMarkedToday(user_id: number, factory_id: number) {
+    const today = new Date().toISOString().split('T')[0];
+
+    const record = await this.attendanceModel.findOne({
+      where: {
+        user_id,
+        factory_id,
+        date: today,
+      },
+    });
+
+    return !!record;
+  }
   async markAttendance(
     user_id: number,
     factory_id: number,

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { WhatsAppService } from './whatsapp.service';
+import { AttendanceCronService, WhatsAppService } from './whatsapp.service';
 import { WhatsAppController } from './whatsapp.controller';
 import { AttendanceModule } from 'src/services/attendance/attendance.module';
 import { UserModule } from 'src/services/users/users.module';
@@ -15,7 +15,7 @@ import { FactoryModule } from 'src/services/factories/factories.module';
     TasksModule,
     FactoryModule,
   ],
-  providers: [WhatsAppService],
+  providers: [WhatsAppService, AttendanceCronService],
   controllers: [WhatsAppController],
 })
 export class WhatsAppModule {}

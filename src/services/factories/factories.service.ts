@@ -11,6 +11,7 @@ import {
 import { Factory, FactoryUser } from './factories.schema';
 import { DbService } from 'src/core/services/db-service/db.service';
 import { CreateFactoryDto, CreateFactoryUserDto } from './factories.dto';
+import { USER_ROLE } from '../users/users.constants';
 
 @Injectable()
 export class FactoryService {
@@ -42,6 +43,22 @@ export class FactoryService {
 
   async addUserToFactory(dto: CreateFactoryUserDto): Promise<FactoryUser> {
     return this.factoryUserModel.create(dto as any);
+  }
+
+  async getAllWorkers() {
+    return this.factoryUserModel.findAll({
+      where: {
+        role: USER_ROLE.WORKER,
+      },
+      include: [
+        {
+          model: this.dbService.sqlService.User,
+          as: 'user',
+          attributes: ['id', 'name', 'phone_number'],
+        },
+      ],
+      attributes: ['id', 'user_id', 'factory_id', 'role'],
+    });
   }
 
   async getFactoryUsers(factory_id: number) {
