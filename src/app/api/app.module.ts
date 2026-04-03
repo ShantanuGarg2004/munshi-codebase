@@ -12,6 +12,7 @@ import { WhatsAppModule } from 'src/modules/whatsapp/whatsapp.module';
 import { IssueModule } from 'src/services/issues/issues.module';
 import { TasksModule } from 'src/services/tasks/tasks.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ReportsModule } from 'src/services/reports/reports.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     UserModule,
     FactoryModule,
     IssueModule,
+    ReportsModule,
     TasksModule,
   ],
   providers: [

@@ -14,6 +14,7 @@ import { COMMAND_HINTS, COMMANDS } from './whatsapp.constants';
 import { FactoryService } from 'src/services/factories/factories.service';
 import axios from 'axios';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { ReportService } from 'src/services/reports/reports.service';
 
 @Injectable()
 export class WhatsAppService {
@@ -25,13 +26,13 @@ export class WhatsAppService {
     private readonly issuesService: IssueService,
     private readonly usersService: UserService,
     private readonly factoryService: FactoryService,
+    private readonly reportService: ReportService,
   ) {}
 
   async sendTextMessage(to: string, message: string) {
-    const url =
-      await `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`;
+    const url = `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`;
 
-    const res = await axios.post(
+    return await axios.post(
       url,
       {
         messaging_product: 'whatsapp',
@@ -46,17 +47,7 @@ export class WhatsAppService {
         },
       },
     );
-
-    console.log(res);
-
-    return res;
   }
-
-  // export function formatCommandHints(commands: typeof COMMAND_HINTS) {
-  //   return commands
-  //     .map((c) => `${c.command} - ${c.hint}`)
-  //     .join('\n');
-  // }
 
   async sendTemplate(
     to: string,
@@ -204,6 +195,15 @@ export class WhatsAppService {
     ━━━━━━━━━━━━━━━
 
     ✨ Tip: Just type any command to get started!`;
+
+    if (command === COMMANDS.REPORT) {
+      this.ensureManager(role);
+
+      const parts = rawMessage.split(' ');
+      const date = parts[1]; // optional
+
+      return this.reportService.generateReport(factoryId, date);
+    }
 
     if (command === COMMANDS.HELP) return formattedText;
 
