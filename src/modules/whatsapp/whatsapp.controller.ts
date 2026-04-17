@@ -30,7 +30,7 @@ export class WhatsAppController {
     const from = message.from;
     const text = message.text?.body;
 
-    return this.whatsappService.handleIncomingMessage({
+    return await this.whatsappService.handleIncomingMessage({
       from,
       message: text,
     });

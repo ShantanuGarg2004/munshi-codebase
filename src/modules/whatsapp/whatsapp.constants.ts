@@ -10,6 +10,7 @@ export const COMMANDS = {
   RESOLVE: '/resolve',
   MEMEBERS: '/members',
   HELP: '/help',
+  REPORT: '/report',
 };
 
 export const COMMAND_HINTS = [
@@ -24,4 +25,5 @@ export const COMMAND_HINTS = [
   { command: COMMANDS.RESOLVE, hint: '/resolve [issueId]' },
   { command: COMMANDS.MEMEBERS, hint: 'View active members' },
   { command: COMMANDS.HELP, hint: 'View command hints' },
+  { command: COMMANDS.REPORT, hint: '/report [date]' },
 ];

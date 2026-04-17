@@ -11,12 +11,15 @@ import { FactoryModule } from 'src/services/factories/factories.module';
 import { WhatsAppModule } from 'src/modules/whatsapp/whatsapp.module';
 import { IssueModule } from 'src/services/issues/issues.module';
 import { TasksModule } from 'src/services/tasks/tasks.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ReportsModule } from 'src/services/reports/reports.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     DbModule,
     LoggerModule,
     HealthCheckModule,
@@ -26,6 +29,7 @@ import { TasksModule } from 'src/services/tasks/tasks.module';
     UserModule,
     FactoryModule,
     IssueModule,
+    ReportsModule,
     TasksModule,
   ],
   providers: [

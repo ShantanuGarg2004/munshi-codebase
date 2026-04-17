@@ -16,6 +16,8 @@ import { TasksService } from 'src/services/tasks/tasks.service';
 import { COMMAND_HINTS, COMMANDS } from './whatsapp.constants';
 import { FactoryService } from 'src/services/factories/factories.service';
 import axios from 'axios';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { ReportService } from 'src/services/reports/reports.service';
 
 @Injectable()
 export class WhatsAppService {
@@ -27,11 +29,11 @@ export class WhatsAppService {
     private readonly issuesService: IssueService,
     private readonly usersService: UserService,
     private readonly factoryService: FactoryService,
+    private readonly reportService: ReportService,
   ) {}
 
   async sendTextMessage(to: string, message: string) {
-    const url =
-      await `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`;
+    const url = `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`;
 
     const res = axios.post(
       url,
@@ -118,7 +120,7 @@ export class WhatsAppService {
         type: 'template',
         template: {
           name: templateName,
-          language: { code: options?.languageCode || 'en_US' },
+
           ...(components.length && { components }),
         },
       },
@@ -150,6 +152,7 @@ export class WhatsAppService {
       await this.sendTextMessage(body.from, result);
       return 'ok';
     } catch (error) {
+      console.log(error);
       await this.sendTextMessage(
         body.from,
         error.message || 'Something went wrong',
@@ -219,6 +222,15 @@ export class WhatsAppService {
     ━━━━━━━━━━━━━━━
 
     ✨ Tip: Just type any command to get started!`;
+
+    if (command === COMMANDS.REPORT) {
+      this.ensureManager(role);
+
+      const parts = rawMessage.split(' ');
+      const date = parts[1]; // optional
+
+      return this.reportService.generateReport(factoryId, date);
+    }
 
     if (command === COMMANDS.HELP) return formattedText;
 
@@ -491,7 +503,7 @@ export class WhatsAppService {
         : result;
     }
 
-    return { message: 'Unknown command: use /help to check list of commands' };
+    return 'Unknown command: use /help to check list of commands';
   }
 
   // 🔒 Role Guards
@@ -536,5 +548,70 @@ export class WhatsAppService {
     }
 
     return { task_id, updateMessage };
+  }
+}
+
+@Injectable()
+export class AttendanceCronService {
+  constructor(
+    private readonly factoryService: FactoryService,
+    private readonly attendanceService: AttendanceService,
+    private readonly whatsappService: WhatsAppService,
+  ) {}
+
+  // 🟢 9 AM initial reminder
+  @Cron('0 9 * * *')
+  async sendMorningReminder() {
+    await this.sendReminder('Morning');
+  }
+
+  // 🔁 Every 2 hours retry
+  @Cron(CronExpression.EVERY_2_HOURS)
+  async sendRetryReminder() {
+    const hour = new Date().getHours();
+
+    // ❌ Skip before 9 AM
+    if (hour < 11) return;
+
+    // ❌ Stop after 7 PM (optional)
+    if (hour > 19) return;
+
+    await this.sendReminder('Retry');
+  }
+
+  // 🔥 Core Logic
+  async sendReminder(type: 'Morning' | 'Retry') {
+    const workers: any = await this.factoryService.getAllWorkers(); // implement this
+
+    const today = new Date().toISOString().split('T')[0];
+
+    for (const worker of workers) {
+      const w = worker.toJSON();
+      const userId = w.user_id;
+      const factoryId = w.factory_id;
+      const phone = w.user.phone_number;
+
+      // ✅ Check attendance
+      const alreadyMarked = await this.attendanceService.isMarkedToday(
+        userId,
+        factoryId,
+      );
+
+      if (alreadyMarked) continue;
+
+      // 🚀 Send template
+      await this.whatsappService.sendTemplate(
+        phone,
+        'factory_attendance_reminder',
+        { body: [w.user.name || 'Worker'] },
+      );
+
+      // ⏳ small delay (avoid rate limit)
+      await this.delay(300);
+    }
+  }
+
+  private async delay(ms: number) {
+    return new Promise((res) => setTimeout(res, ms));
   }
 }
