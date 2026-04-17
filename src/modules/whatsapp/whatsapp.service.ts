@@ -6,7 +6,10 @@ import {
 } from '@nestjs/common';
 import { AttendanceService } from 'src/services/attendance/attendance.service';
 import { UserService } from 'src/services/users/users.service';
-import { WhatsAppIncomingDto } from './whatsapp.dto';
+import {
+  WhatsAppIncomingDto,
+  WhatsAppIncomingServiceDto,
+} from './whatsapp.dto';
 import { IssueService } from 'src/services/issues/issues.service';
 import { USER_ROLE } from 'src/services/users/users.constants';
 import { TasksService } from 'src/services/tasks/tasks.service';
@@ -130,7 +133,18 @@ export class WhatsAppService {
 
   async handleIncomingMessage(body: WhatsAppIncomingDto) {
     try {
-      const result: any = await this.processCommand(body);
+      const ml_url = `http://localhost:8000/classify`;
+
+      const response = await axios.post(`${ml_url}?message=${body.message}`);
+
+      console.log(response.data);
+
+      const result: any = await this.processCommand({
+        ...body,
+        command: response.data.intent,
+        id: response.data.id,
+      });
+
       const message =
         typeof result === 'string' ? result : result?.message || result;
       await this.sendTextMessage(body.from, result);
@@ -147,10 +161,11 @@ export class WhatsAppService {
     }
   }
 
-  async processCommand(body: WhatsAppIncomingDto) {
+  async processCommand(body: WhatsAppIncomingServiceDto) {
     const rawMessage = body?.message?.trim();
     const message = rawMessage?.toLowerCase();
-    const command = message.split(' ')[0];
+    const command = body.command;
+    const id = body.id;
     const phone = body?.from;
 
     const user = await this.usersService.findByPhone(phone);
@@ -290,9 +305,8 @@ export class WhatsAppService {
     // ✅ COMPLETE TASK
     if (command === COMMANDS.COMPLETE) {
       const parts = rawMessage.split(' ');
-      const task_id = Number(parts[1]);
 
-      if (!task_id || isNaN(task_id)) {
+      if (!id || isNaN(id)) {
         return `⚠️ Invalid Format
 
     Use:
@@ -305,13 +319,13 @@ export class WhatsAppService {
       const result = await this.tasksService.completeTask(
         user.id,
         factoryId,
-        task_id,
+        id,
       );
 
       return result?.message
         ? `✅ *Task Completed*
 
-    🆔 Task ID: ${task_id}
+    🆔 Task ID: ${id}
 
     ━━━━━━━━━━━━━━━
 
@@ -324,7 +338,7 @@ export class WhatsAppService {
       this.ensureManager(role);
 
       const parts = rawMessage.split(' ');
-      const assigned_to = parts[1];
+      const assigned_to = JSON.stringify(id);
       const description = parts.slice(2).join(' ').trim();
 
       if (!assigned_to || !description) {
@@ -359,7 +373,7 @@ export class WhatsAppService {
       this.ensureWorker(role);
 
       const parts = rawMessage.split(' ');
-      const task_id = Number(parts[1]);
+      const task_id = id;
       const updateMessage = parts.slice(2).join(' ').trim();
 
       if (!task_id || !updateMessage) {
@@ -453,9 +467,7 @@ export class WhatsAppService {
     if (command === COMMANDS.RESOLVE) {
       this.ensureManager(role);
 
-      const issueId = rawMessage.split(' ')[1];
-
-      if (!issueId) {
+      if (!id) {
         return `⚠️ Invalid Format
 
     Use:
@@ -465,6 +477,7 @@ export class WhatsAppService {
      /resolve 5`;
       }
 
+      const issueId = JSON.stringify(id);
       const result = await this.issuesService.resolveIssue(issueId);
 
       return result?.message

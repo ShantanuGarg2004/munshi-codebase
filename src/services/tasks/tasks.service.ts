@@ -51,7 +51,9 @@ export class TasksService {
     factory_id: number,
     description: string,
   ) {
-    const user = await this.usersService.findByPhone(phone);
+    console.log({ phone: JSON.parse(phone) });
+
+    const user = await this.usersService.findByPhone(JSON.parse(phone));
 
     if (!user) {
       throw new NotFoundException('Worker not found');
