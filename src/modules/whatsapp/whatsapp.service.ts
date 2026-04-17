@@ -135,9 +135,11 @@ export class WhatsAppService {
 
   async handleIncomingMessage(body: WhatsAppIncomingDto) {
     try {
-      const ml_url = `http://localhost:8000/classify`;
+      const ml_url = process.env.ML_URL || `http://localhost:8000`;
 
-      const response = await axios.post(`${ml_url}?message=${body.message}`);
+      const response = await axios.post(
+        `${ml_url}/classify?message=${body.message}`,
+      );
 
       console.log(response.data);
 

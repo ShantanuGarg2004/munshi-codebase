@@ -53,6 +53,9 @@ export class AttendanceService {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
     // 🔍 Check existing attendance
+    //
+    console.log({ today });
+
     const existing = await this.attendanceModel.findOne({
       where: {
         user_id,
