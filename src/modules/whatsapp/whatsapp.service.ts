@@ -141,12 +141,13 @@ export class WhatsAppService {
         `${ml_url}/classify?message=${body.message}`,
       );
 
-      console.log(response.data);
+      console.log('anisole', response.data);
 
       const result: any = await this.processCommand({
         ...body,
         command: response.data.intent,
         id: response.data.id,
+        date: response.data.date,
       });
 
       const message =
@@ -168,8 +169,9 @@ export class WhatsAppService {
 
   async processCommand(body: WhatsAppIncomingServiceDto) {
     const rawMessage = body?.message?.trim();
-    const message = rawMessage?.toLowerCase();
-    const command = body.command;
+    const command = body.command?.startsWith('/')
+      ? body.command
+      : `/${body.command}`;
     const id = body.id;
     const phone = body?.from;
 
@@ -228,10 +230,7 @@ export class WhatsAppService {
     if (command === COMMANDS.REPORT) {
       this.ensureManager(role);
 
-      const parts = rawMessage.split(' ');
-      const date = parts[1]; // optional
-
-      return this.reportService.generateReport(factoryId, date);
+      return this.reportService.generateReport(factoryId, body.date);
     }
 
     if (command === COMMANDS.HELP) return formattedText;
@@ -318,8 +317,6 @@ export class WhatsAppService {
 
     // ✅ COMPLETE TASK
     if (command === COMMANDS.COMPLETE) {
-      const parts = rawMessage.split(' ');
-
       if (!id || isNaN(id)) {
         return `⚠️ Invalid Format
 

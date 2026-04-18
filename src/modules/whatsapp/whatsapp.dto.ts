@@ -47,4 +47,9 @@ export class WhatsAppIncomingServiceDto {
   @IsNotEmpty()
   @IsOptional()
   id?: number;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  date?: string;
 }
