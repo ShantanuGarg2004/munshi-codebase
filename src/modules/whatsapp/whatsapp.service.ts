@@ -195,37 +195,48 @@ export class WhatsAppService {
 
     Welcome to *Munshi Assistant* 🤖
 
-    Here’s what you can do:
-
-    ━━━━━━━━━━━━━━━
-    🟢 *Attendance*
-    • /present → Mark yourself present
-    • /absent → Mark yourself absent
-
-    ━━━━━━━━━━━━━━━
-    📋 *Tasks*
-    • /tasks → View your tasks
-    • /complete [taskId] → Complete a task
-    • /assign @user/@all [task] → Assign task
-    • /update [taskId] [message] → Update task
-
-    ━━━━━━━━━━━━━━━
-    🚨 *Issues*
-    • /issue [message] → Report an issue
-    • /issues → View active issues
-    • /resolve [issueId] → Resolve issue
-
-    ━━━━━━━━━━━━━━━
-    👥 *Team*
-    • /members → View team members
-
-    ━━━━━━━━━━━━━━━
-    ❓ *Help*
-    • /help → Show this menu again
+    Manage attendance, tasks & issues directly from WhatsApp.
 
     ━━━━━━━━━━━━━━━
 
-    ✨ Tip: Just type any command to get started!`;
+    🟢 *Attendance Examples*
+
+    • "present"
+    • "absent"
+
+    ━━━━━━━━━━━━━━━
+
+    📋 *Task Examples*
+
+    • "show my tasks"
+    • "complete task 4"
+    • "@919876543210 finish machine repair"
+    • "@all clean warehouse today"
+    • "update task 3 work completed"
+
+    ━━━━━━━━━━━━━━━
+
+    🚨 *Issue Examples*
+
+    • "machine not working"
+    • "water leakage in unit 2"
+    • "show active issues"
+    • "resolve issue 5"
+
+    ━━━━━━━━━━━━━━━
+
+    👥 *Team Examples*
+
+    • "show team"
+    • "who is absent today"
+
+    ━━━━━━━━━━━━━━━
+
+    ✨ You can now chat naturally instead of remembering commands.
+
+    💡 Example:
+    "@919850411406 aaj khana bna lena"
+    `;
 
     if (command === COMMANDS.REPORT) {
       this.ensureManager(role);
