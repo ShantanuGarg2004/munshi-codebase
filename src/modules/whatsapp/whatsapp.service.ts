@@ -120,6 +120,9 @@ export class WhatsAppService {
         type: 'template',
         template: {
           name: templateName,
+          language: {
+            code: options?.languageCode || 'en_US',
+          },
 
           ...(components.length && { components }),
         },
