@@ -33,29 +33,40 @@ export class WhatsAppService {
   ) {}
 
   async sendTextMessage(to: string, message: string) {
-    const url = `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`;
+    console.log(process.env.OLLI_URL);
 
-    const res = axios.post(
-      url,
-      {
-        messaging_product: 'whatsapp',
-        to,
-        type: 'text',
-        text: { body: message },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-          'Content-Type': 'application/json',
+    const url = `${process.env.OLLI_URL}/external/waba/send`;
+
+    try {
+      const response = await axios.post(
+        url,
+        {
+          to,
+          type: 'text',
+          text: {
+            body: message,
+          },
         },
-      },
-    );
+        {
+          headers: {
+            'X-API-Key': process.env.OLLI_KEY,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
 
-    console.log(res);
+      console.log(response.data);
 
-    return res;
+      return response.data;
+    } catch (error: any) {
+      console.log(
+        'WhatsApp Send Error:',
+        error?.response?.data || error.message,
+      );
+
+      throw error;
+    }
   }
-
   // export function formatCommandHints(commands: typeof COMMAND_HINTS) {
   //   return commands
   //     .map((c) => `${c.command} - ${c.hint}`)
@@ -68,11 +79,9 @@ export class WhatsAppService {
     options?: {
       languageCode?: string;
       body?: (string | number)[];
-      header?: (string | number)[];
-      buttons?: { index: number; payload: string }[];
     },
   ) {
-    const url = `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`;
+    const url = `${process.env.OLLI_URL}/external/waba/send`;
 
     const components: any[] = [];
 
@@ -86,57 +95,31 @@ export class WhatsAppService {
       });
     }
 
-    if (options?.header?.length) {
-      components.push({
-        type: 'header',
-        parameters: options.header.map((val) => ({
-          type: 'text',
-          text: String(val),
-        })),
-      });
-    }
-
-    if (options?.buttons?.length) {
-      options.buttons.forEach((btn) => {
-        components.push({
-          type: 'button',
-          sub_type: 'quick_reply',
-          index: String(btn.index),
-          parameters: [
-            {
-              type: 'payload',
-              payload: btn.payload,
-            },
-          ],
-        });
-      });
-    }
-
-    return axios.post(
+    const response = await axios.post(
       url,
       {
-        messaging_product: 'whatsapp',
         to,
         type: 'template',
         template: {
           name: templateName,
-          language: {
-            code: options?.languageCode || 'en_US',
-          },
-
-          ...(components.length && { components }),
+          language: options?.languageCode || 'en',
+          components,
         },
       },
       {
         headers: {
-          Authorization: `Bearer ${this.token}`,
+          'X-API-Key': process.env.OLLI_KEY,
           'Content-Type': 'application/json',
         },
       },
     );
-  }
 
+    console.log(response);
+
+    return response.data;
+  }
   async handleIncomingMessage(body: WhatsAppIncomingDto) {
+    console.log({ body });
     try {
       const ml_url = process.env.ML_URL || `http://localhost:8000`;
 
@@ -152,6 +135,8 @@ export class WhatsAppService {
         id: response.data.id,
         date: response.data.date,
       });
+
+      console.log({ result });
 
       const message =
         typeof result === 'string' ? result : result?.message || result;
