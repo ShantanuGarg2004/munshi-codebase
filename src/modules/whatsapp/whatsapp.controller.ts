@@ -23,12 +23,25 @@ export class WhatsAppController {
   // 📩 Incoming messages
   @Post()
   async receiveMessage(@Body() body: any) {
-    const message = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+    console.log({ controller_body: body });
 
-    if (!message) return 'No message';
+    const data = body?.data;
 
-    const from = message.from;
-    const text = message.text?.body;
+    if (!data) {
+      return 'No message data';
+    }
+
+    if (data.type !== 'text') {
+      return 'Unsupported message type';
+    }
+
+    const from = data.from;
+
+    const text = data.text;
+
+    if (!from || !text) {
+      return 'Invalid message payload';
+    }
 
     return await this.whatsappService.handleIncomingMessage({
       from,
